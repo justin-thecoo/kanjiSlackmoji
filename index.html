@@ -1,0 +1,195 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>Kanji → Slackmoji</title>
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;700;900&family=Noto+Serif+JP:wght@400;700;900&family=Zen+Maru+Gothic:wght@500;700;900&family=Klee+One:wght@400;600&family=RocknRoll+One&family=Yuji+Syuku&family=Hachi+Maru+Pop&family=Reenie+Beanie&family=DotGothic16&family=Dela+Gothic+One&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+
+<!-- gif.js for animated GIF export -->
+<script src="https://cdn.jsdelivr.net/npm/gif.js@0.2.0/dist/gif.js"></script>
+<!-- JSZip for batch ZIP -->
+<script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
+
+<link rel="stylesheet" href="styles.css">
+<script src="app.js" defer></script>
+</head>
+<body>
+<div class="wrap">
+  <header class="topbar">
+    <div class="logo">
+      <div class="mark"><span>字</span></div>
+      <div class="text">Kanji → Slackmoji
+        <small>type a kanji · download as png or gif</small>
+      </div>
+    </div>
+    <div class="pill"><span class="dot"></span> Slack-ready 128×128</div>
+  </header>
+
+  <div class="grid">
+    <!-- LEFT: controls -->
+    <section class="card controls">
+      <h2><span class="num">1</span> Characters</h2>
+      <p class="sub">Type up to 4 kanji. Shorter = more readable at Slack size.</p>
+
+      <input id="kanjiInput" class="kanji-input" maxlength="4" placeholder="漢字" autocomplete="off" />
+
+      <div class="quickrow" id="quickrow"></div>
+
+      <div class="name-row">
+        <span class="colon">:</span>
+        <input id="nameInput" placeholder="emoji_name" spellcheck="false" />
+        <span class="colon">:</span>
+        <button class="btn-ghost" id="romajiBtn" title="Suggest romaji name via AI">✨ Suggest</button>
+      </div>
+
+      <div class="section">
+        <h2><span class="num">2</span> Style</h2>
+        <p class="sub">Pick a preset — tweak below.</p>
+        <div class="style-grid" id="styleGrid"></div>
+      </div>
+
+      <div class="section">
+        <h2><span class="num">3</span> Animation</h2>
+        <p class="sub">Exports as an animated GIF. Choose <em>None</em> for a plain PNG.</p>
+        <div class="anim-grid" id="animGrid"></div>
+      </div>
+
+      <div class="section">
+        <h2><span class="num">4</span> Tweaks</h2>
+        <div class="ctrls">
+          <div class="ctrl">
+            <label>Font</label>
+            <select id="fontSelect">
+              <option value='900 NNNpx "Noto Sans JP", sans-serif'>Noto Sans JP · Bold</option>
+              <option value='900 NNNpx "Noto Serif JP", serif'>Noto Serif JP · Bold</option>
+              <option value='900 NNNpx "Zen Maru Gothic", sans-serif'>Zen Maru Gothic · Round</option>
+              <option value='600 NNNpx "Klee One", serif'>Klee One · Pen</option>
+              <option value='400 NNNpx "RocknRoll One", sans-serif'>RocknRoll One</option>
+              <option value='400 NNNpx "Yuji Syuku", serif'>Yuji Syuku · Brush</option>
+              <option value='400 NNNpx "Hachi Maru Pop", sans-serif'>Hachi Maru Pop</option>
+              <option value='400 NNNpx "DotGothic16", sans-serif'>DotGothic16 · Pixel</option>
+              <option value='400 NNNpx "Dela Gothic One", sans-serif'>Dela Gothic One · Heavy</option>
+            </select>
+          </div>
+
+          <div class="ctrl">
+            <label>Foreground</label>
+            <div class="swatches" id="fgSwatches"></div>
+          </div>
+
+          <div class="ctrl">
+            <label>Background</label>
+            <div class="swatches" id="bgSwatches"></div>
+          </div>
+
+          <div class="ctrl">
+            <label>Size <span class="val" id="sizeVal">86%</span></label>
+            <input type="range" id="sizeRange" min="40" max="100" value="86">
+          </div>
+
+          <div class="ctrl">
+            <label>Padding <span class="val" id="padVal">6px</span></label>
+            <input type="range" id="padRange" min="0" max="20" value="6">
+          </div>
+
+          <div class="ctrl">
+            <label>Rotation <span class="val" id="rotVal">0°</span></label>
+            <input type="range" id="rotRange" min="-30" max="30" value="0">
+          </div>
+
+          <div class="ctrl">
+            <label>Stroke <span class="val" id="strokeVal">0</span></label>
+            <input type="range" id="strokeRange" min="0" max="12" value="0">
+          </div>
+
+          <div class="ctrl">
+            <label>Anim Speed <span class="val" id="speedVal">1.0×</span></label>
+            <input type="range" id="speedRange" min="40" max="200" value="100">
+          </div>
+        </div>
+      </div>
+
+      <div class="section batch">
+        <h2><span class="num">5</span> Batch (optional)</h2>
+        <p class="sub">Paste multiple kanji or words (spaces/newlines separate). Downloads as a ZIP.</p>
+        <textarea id="batchInput" placeholder="猫 犬 鳥 魚"></textarea>
+        <div class="hint">Uses the current style, animation, and tweaks. Names auto-generated as <code>kanji_01</code>, <code>kanji_02</code>…</div>
+        <div class="dl-row">
+          <button class="btn btn-secondary" id="batchBtn">📦 Download batch ZIP</button>
+        </div>
+        <div class="progress" id="batchProgress"><span>Rendering…</span><div class="bar"><div></div></div><span id="batchPct">0%</span></div>
+      </div>
+    </section>
+
+    <!-- RIGHT: preview + download -->
+    <section class="card preview-card">
+      <h2><span class="num">👁</span> Preview</h2>
+      <p class="sub">Shown on light + dark Slack-like backgrounds.</p>
+
+      <div class="stage">
+        <div class="stage-panel light">
+          <span class="lbl">Light theme</span>
+          <div class="stage-canvas-wrap">
+            <canvas class="big-preview" id="previewLight" width="128" height="128"></canvas>
+            <span class="anim-live off" id="liveBadgeL">● LIVE</span>
+          </div>
+          <div class="slack-line">
+            <div class="av"></div>
+            <div class="body">
+              <span class="who">you</span><span class="time">12:34</span>
+              <div>This PR ships <img class="em-inline" id="inlineL" alt="" /> fr fr</div>
+              <div class="reaction"><img id="reactL" alt="" /><span>3</span></div>
+            </div>
+          </div>
+          <div class="size-preview">
+            <div class="tag"><canvas id="s22L" width="22" height="22"></canvas><span>22px</span></div>
+            <div class="tag"><canvas id="s32L" width="32" height="32"></canvas><span>32px</span></div>
+            <div class="tag"><canvas id="s64L" width="64" height="64"></canvas><span>64px</span></div>
+          </div>
+        </div>
+
+        <div class="stage-panel dark">
+          <span class="lbl">Dark theme</span>
+          <div class="stage-canvas-wrap">
+            <canvas class="big-preview" id="previewDark" width="128" height="128"></canvas>
+            <span class="anim-live off" id="liveBadgeD">● LIVE</span>
+          </div>
+          <div class="slack-line">
+            <div class="av"></div>
+            <div class="body">
+              <span class="who">you</span><span class="time">12:34</span>
+              <div>Ship it <img class="em-inline" id="inlineD" alt="" /></div>
+              <div class="reaction"><img id="reactD" alt="" /><span>7</span></div>
+            </div>
+          </div>
+          <div class="size-preview" style="color:#aaa">
+            <div class="tag"><canvas id="s22D" width="22" height="22"></canvas><span>22px</span></div>
+            <div class="tag"><canvas id="s32D" width="32" height="32"></canvas><span>32px</span></div>
+            <div class="tag"><canvas id="s64D" width="64" height="64"></canvas><span>64px</span></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="dl-row">
+        <button class="btn btn-primary" id="dlPngBtn">⬇ Download PNG</button>
+        <button class="btn btn-yellow" id="dlGifBtn">🎞 Download GIF</button>
+        <button class="btn btn-secondary" id="copyBtn" title="Copy PNG to clipboard">📋 Copy PNG</button>
+      </div>
+      <div class="progress" id="gifProgress"><span>Encoding GIF…</span><div class="bar"><div></div></div><span id="gifPct">0%</span></div>
+
+      <p class="sub" style="margin-top:18px; margin-bottom:0;">
+        Slack upload: <strong>Preferences → Customize → Add Custom Emoji</strong>. Name with <kbd>:</kbd>colons<kbd>:</kbd>.
+      </p>
+    </section>
+  </div>
+
+  <div class="foot">
+    Made with canvas + a little <code>gif.js</code>. No server, no tracking, no vibes lost.
+  </div>
+</div>
+</body>
+</html>
