@@ -390,6 +390,24 @@ function drawEmoji(ctx, size, frame=0, opts={}) {
   ctx.restore();
 }
 
+// ---------- name generation ----------
+const ROMAJI_MAP = {'猫':'neko','犬':'inu','火':'hi','水':'mizu','龍':'ryuu','愛':'ai','夢':'yume','心':'kokoro','侍':'samurai','漢字':'kanji'};
+function baseRomaji(text) {
+  if (!text) return 'emoji';
+  return ROMAJI_MAP[text] || 'kanji';
+}
+function generateName() {
+  const parts = [baseRomaji(state.text)];
+  if (state.style && state.style !== 'solid') parts.push(state.style);
+  if (state.anim && state.anim !== 'none') parts.push(state.anim);
+  return parts.join('_');
+}
+function applyGeneratedName() {
+  const name = generateName();
+  state.name = name;
+  $('#nameInput').value = name;
+}
+
 // ---------- UI wiring ----------
 function initUI() {
   // quick row
@@ -398,9 +416,8 @@ function initUI() {
   qr.addEventListener('click', (e) => {
     const c = e.target.closest('.chip'); if (!c) return;
     $('#kanjiInput').value = c.dataset.k;
-    $('#nameInput').value = c.dataset.r;
     state.text = c.dataset.k;
-    state.name = c.dataset.r;
+    applyGeneratedName();
     renderAll();
   });
 
@@ -416,6 +433,7 @@ function initUI() {
     const t = e.target.closest('.style-tile'); if(!t) return;
     state.style = t.dataset.id;
     $$('.style-tile').forEach(x => x.classList.toggle('active', x.dataset.id === state.style));
+    applyGeneratedName();
     renderAll();
   });
 
@@ -432,6 +450,7 @@ function initUI() {
     $$('.anim-tile').forEach(x => x.classList.toggle('active', x.dataset.id === state.anim));
     updateLiveBadge();
     if (state.anim !== 'none') startLoop(); else stopLoop();
+    applyGeneratedName();
     renderAll();
   });
 
@@ -500,10 +519,7 @@ function initUI() {
   // inputs
   $('#kanjiInput').addEventListener('input', (e) => {
     state.text = e.target.value;
-    // auto-suggest slackmoji name if none
-    if (!$('#nameInput').value) {
-      $('#nameInput').value = '';
-    }
+    applyGeneratedName();
     renderAll();
   });
   $('#nameInput').addEventListener('input', (e) => {
@@ -511,19 +527,10 @@ function initUI() {
     e.target.value = state.name;
   });
 
-  // romaji suggest
-  $('#romajiBtn').addEventListener('click', async () => {
+  // regenerate name from current selections (useful after manual edits)
+  $('#romajiBtn').addEventListener('click', () => {
     if (!state.text) return;
-    const btn = $('#romajiBtn');
-    btn.disabled = true; const orig = btn.innerHTML; btn.innerHTML = '…';
-    try {
-      const name = await suggestRomaji(state.text);
-      if (name) {
-        $('#nameInput').value = name;
-        state.name = name;
-      }
-    } catch (err) { console.warn(err); }
-    btn.disabled = false; btn.innerHTML = orig;
+    applyGeneratedName();
   });
 
   // download
@@ -537,8 +544,7 @@ function initUI() {
   // initial text
   $('#kanjiInput').value = '漢字';
   state.text = '漢字';
-  $('#nameInput').value = 'kanji';
-  state.name = 'kanji';
+  applyGeneratedName();
 
   // pre-render style tiles
   renderStyleTiles();
@@ -751,12 +757,6 @@ async function downloadBatchZip() {
     prog.classList.remove('on');
     bar.style.width = '0%'; pct.textContent = '0%';
   }
-}
-
-// ---------- romaji suggestion (local map) ----------
-async function suggestRomaji(text) {
-  const fallback = {'猫':'neko','犬':'inu','火':'hi','水':'mizu','龍':'ryuu','愛':'ai','夢':'yume','心':'kokoro','侍':'samurai','漢字':'kanji'};
-  return fallback[text] || 'kanji';
 }
 
 // ---------- font loading wait ----------
