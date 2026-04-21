@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <defs>
+    <clipPath id="r"><rect x="0" y="0" width="64" height="64" rx="14" ry="14"/></clipPath>
+  </defs>
+  <g clip-path="url(#r)">
+    <rect width="64" height="64" fill="#e01e5a"/>
+    <rect x="32" width="32" height="32" fill="#ecb22e"/>
+    <rect x="32" y="32" width="32" height="32" fill="#2eb67d"/>
+    <rect y="32" width="32" height="32" fill="#36c5f0"/>
+  </g>
+  <rect x="6" y="6" width="52" height="52" rx="10" ry="10" fill="#1a1423"/>
+  <text x="32" y="33" text-anchor="middle" dominant-baseline="central"
+        font-family="'Hiragino Sans','Noto Sans JP',sans-serif"
+        font-weight="900" font-size="38" fill="#ffffff">字</text>
+</svg>
