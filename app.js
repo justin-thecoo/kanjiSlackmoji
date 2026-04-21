@@ -665,7 +665,7 @@ function encodeGif({text, name, style, anim, fg, bg, font, size, pad, rot, strok
       width: 128,
       height: 128,
       transparent: bg === 'transparent' ? 0x00000000 : null,
-      workerScript: 'https://cdn.jsdelivr.net/npm/gif.js@0.2.0/dist/gif.worker.js',
+      workerScript: 'vendor/gif.worker.js',
     });
     const frames = 24;
     const frameDelay = Math.round((1400 / (speed/100)) / frames);
