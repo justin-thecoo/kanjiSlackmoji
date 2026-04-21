@@ -511,7 +511,7 @@ function initUI() {
     e.target.value = state.name;
   });
 
-  // romaji suggest via Claude
+  // romaji suggest
   $('#romajiBtn').addEventListener('click', async () => {
     if (!state.text) return;
     const btn = $('#romajiBtn');
@@ -753,7 +753,7 @@ async function downloadBatchZip() {
   }
 }
 
-// ---------- AI: romaji suggestion ----------
+// ---------- romaji suggestion (local map) ----------
 async function suggestRomaji(text) {
   const fallback = {'猫':'neko','犬':'inu','火':'hi','水':'mizu','龍':'ryuu','愛':'ai','夢':'yume','心':'kokoro','侍':'samurai','漢字':'kanji'};
   return fallback[text] || 'kanji';
