@@ -152,14 +152,15 @@ function drawEmoji(ctx, size, frame=0, opts={}) {
   const pad = s.pad * (size/128);
   const inner = size - pad*2;
 
-  // char font size: text-size percentage of inner
-  // for multi-char we'll render side-by-side
+  // char grid layout: 4 chars -> 2x2, otherwise single row
   const chars = [...text];
   const n = chars.length || 1;
-  // per-char width target
-  let baseGlyph = (inner / n) * (s.size/100) * 1.08;
-  // clamp to inner height
-  baseGlyph = Math.min(baseGlyph, inner * (s.size/100) * 1.05);
+  const cols = n === 4 ? 2 : n;
+  const rows = n === 4 ? 2 : 1;
+  const cellWidth = inner / cols;
+  const cellHeight = inner / rows;
+  const cellSize = Math.min(cellWidth, cellHeight);
+  let baseGlyph = cellSize * (s.size/100) * 1.08;
 
   // translate to center
   ctx.translate(size/2, size/2);
@@ -211,9 +212,9 @@ function drawEmoji(ctx, size, frame=0, opts={}) {
     fg = `hsl(${hue}, 85%, 55%)`;
   }
 
-  // per-char layout
-  const charWidth = inner / n;
-  const startX = -inner/2 + charWidth/2;
+  // per-cell layout
+  const startX = -inner/2 + cellWidth/2;
+  const startY = -inner/2 + cellHeight/2;
 
   // STYLE: outline only -> render stroke; no fill
   // STYLE: solid -> fill
@@ -225,8 +226,8 @@ function drawEmoji(ctx, size, frame=0, opts={}) {
   // STYLE: shadow -> 3d offset drop
   // STYLE: varsity -> thick white stroke over color fill
 
-  const renderChar = (ch, cx) => {
-    const x = cx, y = 0;
+  const renderChar = (ch, cx, cy) => {
+    const x = cx, y = cy;
 
     if (s.style === 'pixel') {
       // offload to off-screen low-res canvas
@@ -240,7 +241,7 @@ function drawEmoji(ctx, size, frame=0, opts={}) {
       l.fillText(ch, low/2, low/2);
       ctx.save();
       ctx.imageSmoothingEnabled = false;
-      const drawSize = charWidth * 0.9;
+      const drawSize = cellSize * 0.9;
       ctx.drawImage(lc, x - drawSize/2, y - drawSize/2, drawSize, drawSize);
       ctx.restore();
       return;
@@ -354,7 +355,7 @@ function drawEmoji(ctx, size, frame=0, opts={}) {
 
     if (s.style === 'rainbow') {
       // each char a different hue (when not animating, spread; when animating, shift)
-      const hue = (360 * (x / inner + 0.5) + (s.anim==='rainbow' ? t*360 : 0)) % 360;
+      const hue = ((360 / n) * renderChar.idx + (s.anim === 'rainbow' ? t*360 : 0)) % 360;
       ctx.fillStyle = `hsl(${hue}, 85%, 55%)`;
       ctx.fillText(ch, x, y);
       return;
@@ -376,15 +377,18 @@ function drawEmoji(ctx, size, frame=0, opts={}) {
   // render chars (respect typewriter)
   const visibleCount = clamp(twChars, 0, n);
   for (let i = 0; i < visibleCount; i++) {
-    const cx = startX + i * charWidth;
-    renderChar(chars[i], cx);
+    const col = i % cols, row = Math.floor(i / cols);
+    renderChar.idx = i;
+    renderChar(chars[i], startX + col * cellWidth, startY + row * cellHeight);
   }
   // typewriter caret
   if (tw && caretOn && visibleCount < n) {
-    const cx = startX + visibleCount * charWidth - charWidth*0.35;
+    const col = visibleCount % cols, row = Math.floor(visibleCount / cols);
+    const cx = startX + col * cellWidth - cellWidth*0.35;
+    const cy = startY + row * cellHeight;
     ctx.fillStyle = s.fg;
     const w = Math.max(2, size*0.03);
-    ctx.fillRect(cx, -baseGlyph*0.35, w, baseGlyph*0.7);
+    ctx.fillRect(cx, cy - baseGlyph*0.35, w, baseGlyph*0.7);
   }
 
   ctx.restore();
